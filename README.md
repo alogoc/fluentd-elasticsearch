@@ -1,2 +1,4 @@
 # fluentd-elasticsearch
-Flutend - Fluentd-UI  &amp; Elasticsearch for Kubernetes
+Flutend &amp;  Fluentd-ui  &amp; for elasticsearch on Kubernetes
+
+Multiple gem plugins have been added to image, please check Gemfile for further details
