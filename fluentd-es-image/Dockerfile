@@ -50,8 +50,8 @@ RUN BUILD_DEPS="make gcc g++ libc6-dev ruby-dev libffi-dev zlib1g-dev git" \
 COPY fluent.conf /etc/fluent/fluent.conf
 COPY run.sh /run.sh
 
-# Expose prometheus metrics / fluentd ui / out_forward / snmp / in_http / in_udp / in_tcp / in_syslog / promitheus-metrics
-EXPOSE 80 9292 24224 161 9880 5160 5170 5170 5170 24231
+# Expose prometheus metrics / fluentd ui / out_forward / snmp / in_http / in_udp / in_tcp / in_syslog / promitheus-metrics / monitor-agent
+EXPOSE 80 9292 24224 161 9880 5160 5170 5170 5170 24231 24220
 
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.1
 

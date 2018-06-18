@@ -13,7 +13,7 @@ if [ $status -ne 0 ]; then
 fi
 
 # Start Fluentd process
-/usr/local/bin/fluentd -d /var/run/lock/fluentd.pid --no-supervisor -q  
+/usr/local/bin/fluentd -d /var/run/lock/fluentd.pid -q  
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start fluentd: $status"
