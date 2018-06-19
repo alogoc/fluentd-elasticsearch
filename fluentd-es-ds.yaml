@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: fluentd-es
-  namespace: kube-system
+  namespace: kube-monitoring
   labels:
     k8s-app: fluentd-es
     kubernetes.io/cluster-service: "true"
@@ -22,10 +22,18 @@ rules:
   resources:
   - "namespaces"
   - "pods"
+  - "secrets"
+  - "pods/log"
+  - "deployments"
+  - "batch"
+  - "extensions"
+  - "crontabs"
   verbs:
   - "get"
   - "watch"
   - "list"
+  - "update"
+  - "post"
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -38,7 +46,7 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: fluentd-es
-  namespace: kube-system
+  namespace: kube-monitoring
   apiGroup: ""
 roleRef:
   kind: ClusterRole
@@ -49,7 +57,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluentd-es-v2.0.4
-  namespace: kube-system
+  namespace: kube-monitoring
   labels:
     k8s-app: fluentd-es
     version: v2.0.4
@@ -73,38 +81,82 @@ spec:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         seccomp.security.alpha.kubernetes.io/pod: 'docker/default'
     spec:
+      hostNetwork: true
       priorityClassName: system-node-critical
       serviceAccountName: fluentd-es
       containers:
       - name: fluentd-es
-        image: k8s.gcr.io/fluentd-elasticsearch:v2.0.4
-        env:
-        - name: FLUENTD_ARGS
-          value: --no-supervisor -q
+        image: alogoc/fluentd-elasticsearch:v2.0.4-ui
+        imagePullPolicy: Always
         resources:
           limits:
-            memory: 500Mi
+            memory: 2048Mi
           requests:
             cpu: 100m
             memory: 200Mi
+        securityContext:
+           privileged: true
         volumeMounts:
-        - name: varlog
-          mountPath: /var/log
-        - name: varlibdockercontainers
-          mountPath: /var/lib/docker/containers
-          readOnly: true
-        - name: config-volume
-          mountPath: /etc/fluent/config.d
+         - name: varlog
+           mountPath: /var/log
+         - name: varlibdockercontainers
+           mountPath: /var/lib/docker/containers
+           readOnly: true
+         - name: config-volume
+           mountPath: /etc/fluent/config.d
+         - name: docker-sock
+           mountPath: /var/run/docker.sock
+         - name: libsystemd
+           mountPath: /usr/lib64/libsystemd.so.0
+         - name: varrun
+           mountPath: /var/run
+        ports:
+         - containerPort: 24224
+           name: in-forward
+           protocol: TCP
+         - containerPort: 9880
+           name: http
+           protocol: TCP
+         - containerPort: 161
+           name: snmp
+           protocol: UDP
+         - containerPort: 5160
+           name: in-udp
+           protocol: UDP
+         - containerPort: 5170
+           name: in-tcp
+           protocol: TCP
+         - containerPort: 5140
+           name: in-syslog
+           protocol: TCP
+         - containerPort: 9292
+           name: fluentd-ui
+           protocol: TCP
+         - containerPort: 24231
+           name: promths-mtr
+           protocol: TCP
+         - containerPort: 24220
+           name: monitor-agnt
+           protocol: TCP
       nodeSelector:
         beta.kubernetes.io/fluentd-ds-ready: "true"
       terminationGracePeriodSeconds: 30
       volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+      - name: varrun
+        hostPath:
+          path: /var/run
       - name: varlog
         hostPath:
           path: /var/log
       - name: varlibdockercontainers
         hostPath:
           path: /var/lib/docker/containers
+      - name: libsystemd
+        hostPath:
+          path: /usr/lib64/libsystemd.so.0
       - name: config-volume
         configMap:
           name: fluentd-es-config-v0.1.4
